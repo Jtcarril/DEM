@@ -15,8 +15,13 @@ class math
    bool sphere_facet_contact(double a[4], double nodes[][3], int facets[][4] );
    bool sphere_line_contact(double a[4], double nodes[][3], int facets[][4] ); 
    bool contact_within_facet(double a[4], double nodes[][3], int facets[][4] );
+   bool contact_with_node(double a[4], double nodes[][3], int facets[][4] );
 
    int facet_size;
+   int nodes_size;
+
+   double cylinder_radius;
+   double tolerance;
   
    double Normal_facet_vector[3];
    double distance;
@@ -33,6 +38,9 @@ int main()
   math account1;
 
   account1.facet_size = 1;
+  account1.nodes_size = 3;
+  account1.cylinder_radius = 0;
+  account1.tolerance = 0;
 
   double nodes[3][3];
   int facets[account1.facet_size][4];
@@ -87,7 +95,15 @@ int main()
      }
 
      else 
-       cout << "Not in contact with facet " << endl;
+     {
+      contact =  account1.contact_with_node(sphere2, nodes, facets);
+     
+      if (contact)
+        cout << "Contacted Node " << endl;
+
+      else
+        cout << "Not in contact " << endl;
+     }
    }
   }
   else if (!contact)
@@ -122,7 +138,7 @@ bool math::sphere_sphere_contact(double a[4], double b[4])
   double distance = 0;
 
   for (int i = 0; i < 3; i++)
-    distance += (b[i] - a[i]) * (b[i] - a[i]); 
+    distance += (b[i] - a[i] - 2 * tolerance) * (b[i] - a[i] - 2 * tolerance); 
   distance = sqrt( distance);
 
   if (distance < (a[3] + b[3] ) )
@@ -201,7 +217,7 @@ bool math::sphere_facet_contact(double a[4], double nodes[][3], int facets[][4])
 
 // determines the distance from the facet plane to the sphere center location
 
-    distance = dot_product(Normal_facet_vector, a) + N_d;
+    distance = dot_product(Normal_facet_vector, a) + N_d - 2 * tolerance;
 
     if (debug_contact)
       cout << "Distance from the sphere to the facet plane = " << distance << endl;
@@ -211,6 +227,7 @@ bool math::sphere_facet_contact(double a[4], double nodes[][3], int facets[][4])
    if (sqrt(distance*distance < a[3] ) )
    {
      value = true;  
+     break;
    }
     else
       value = false;
@@ -291,7 +308,7 @@ bool math::sphere_line_contact(double a[4], double nodes[][3], int facets[][4] )
 
       Area_abc = sqrt( abc[0] * abc[0] + abc[1] * abc[1] + abc[2] * abc[2] );
 
-      distance = 2 * Area_abc / length_L; 
+      distance = 2 * Area_abc / length_L - 2 * tolerance; 
 
       if (debug_contact)
         cout << "Distance = " << distance << endl << endl;
@@ -303,7 +320,7 @@ bool math::sphere_line_contact(double a[4], double nodes[][3], int facets[][4] )
 
 // if the perpendicular distance to line is less than radius of sphere, then contact
 
-        if (distance < a[i] )
+        if ((distance - cylinder_radius ) < a[i] )
         {
           value = true;
           break;
@@ -387,3 +404,27 @@ bool math::contact_within_facet(double a[4], double nodes[][3], int facets[][4] 
   return value;
 } 
 
+bool math::contact_with_node(double a[4], double nodes[][3], int facets[][4] )
+{
+  double distance_sphere_to_node;
+
+  for (int i = 0; i < nodes_size; i++)
+  {
+    for (int j = 0; j < 3; j++)
+    {
+      distance_sphere_to_node = (a[j] - nodes[i][j] ) * (a[j] - nodes[i][j] );
+    }
+  
+    distance_sphere_to_node = sqrt( distance_sphere_to_node ) - 2 * tolerance;
+
+    if (distance_sphere_to_node < a[3] )
+    {
+      return true;
+      break;
+    }
+
+   }
+
+return false;
+}
+        
